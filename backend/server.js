@@ -96,8 +96,11 @@ app.get('/api/my-reservations', authenticateToken, async (req, res) => {
         );
         res.json(result.rows);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Error fetching reservations' });
+        console.error('Error fetching reservations:', err);
+        res.status(500).json({ 
+            error: 'Error fetching reservations',
+            details: err.message 
+        });
     }
 });
 
@@ -114,15 +117,22 @@ app.get('/api/menu', async (req, res) => {
 
 // Update reservation route to include user_id
 app.post('/api/reservations', authenticateToken, async (req, res) => {
-    const { customer_name, email, date, time, party_size } = req.body;
     try {
+        const { customer_name, email, date, time, party_size } = req.body;
+        // Add user_id from the authenticated token
+        const user_id = req.user.userId;
+        
         const query = 'INSERT INTO reservations (customer_name, email, date, time, party_size, user_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *';
-        const values = [customer_name, email, date, time, party_size, req.user.userId];
+        const values = [customer_name, email, date, time, party_size, user_id];
+        
         const result = await db.query(query, values);
         res.status(201).json(result.rows[0]);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Reservation error:', err);
+        res.status(500).json({ 
+            error: 'Internal server error',
+            details: err.message 
+        });
     }
 });
 
@@ -147,15 +157,15 @@ async function initializeTables() {
             );
 
             CREATE TABLE IF NOT EXISTS reservations (
-                id SERIAL PRIMARY KEY,
-                customer_name VARCHAR(100) NOT NULL,
-                email VARCHAR(100) NOT NULL,
-                date DATE NOT NULL,
-                time TIME NOT NULL,
-                party_size INT NOT NULL,
-                user_id INTEGER REFERENCES users(id),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
+            id SERIAL PRIMARY KEY,
+            customer_name VARCHAR(100) NOT NULL,
+            email VARCHAR(100) NOT NULL,
+            date DATE NOT NULL,
+            time TIME NOT NULL,
+            party_size INT NOT NULL,
+            user_id INTEGER REFERENCES users(id),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
         `);
         console.log('Tables initialized successfully');
     } catch (err) {

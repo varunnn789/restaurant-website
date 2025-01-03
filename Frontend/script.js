@@ -197,14 +197,18 @@ async function handleReservation(event) {
             body: JSON.stringify(reservationData)
         });
 
-        if (!response.ok) throw new Error('Failed to make reservation');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to make reservation');
+        }
 
+        const data = await response.json();
         alert('Reservation submitted successfully!');
         event.target.reset();
         fetchUserReservations();
     } catch (error) {
         console.error('Error submitting reservation:', error);
-        alert('An error occurred while submitting your reservation. Please try again.');
+        alert(error.message || 'An error occurred while submitting your reservation. Please try again.');
     }
 }
 
