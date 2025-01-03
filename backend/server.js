@@ -48,14 +48,31 @@ app.get('/api/menu', async (req, res) => {
 
 app.post('/api/menu', async (req, res) => {
     const { name, description, price, category } = req.body;
+    
+    // Validation
+    if (!name || !description || !price || !category) {
+        return res.status(400).json({ 
+            error: 'Missing required fields',
+            required: ['name', 'description', 'price', 'category']
+        });
+    }
+
     try {
         const query = 'INSERT INTO menu_items (name, description, price, category) VALUES ($1, $2, $3, $4) RETURNING *';
         const values = [name, description, price, category];
+        
+        console.log('Attempting to insert:', values); // Debug log
+        
         const result = await db.query(query, values);
+        console.log('Insert result:', result.rows[0]); // Debug log
+        
         res.status(201).json(result.rows[0]);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Detailed error:', err); // This will show in your server logs
+        res.status(500).json({ 
+            error: 'Internal server error',
+            details: err.message
+        });
     }
 });
 
