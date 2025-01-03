@@ -31,6 +31,23 @@ app.get('/test-db', async (req, res) => {
     }
 });
 
+app.get('/api/check-table', async (req, res) => {
+    try {
+        const result = await db.query(`
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_name = 'menu_items';
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Table check error:', err);
+        res.status(500).json({ 
+            error: 'Error checking table structure',
+            details: err.message 
+        });
+    }
+});
+
 // Existing routes
 app.get('/api/menu', async (req, res) => {
     try {
