@@ -2,17 +2,22 @@ const API_URL = 'https://restaurant-backend-ybln.onrender.com/api';
 
 // Fetch menu items
 function fetchMenuItems() {
-  fetch(`${API_URL}/menu`)
-    .then(response => response.json())
-    .then(data => {
-      const menuSection = document.getElementById('menu-items');
-      data.forEach(item => {
-        const itemElement = document.createElement('div');
-        itemElement.innerHTML = `<h3>${item.name}</h3><p>${item.description}</p><p>$${item.price.toFixed(2)}</p>`;
-        menuSection.appendChild(itemElement);
-      });
-    })
-    .catch(error => console.error('Error fetching menu items:', error));
+  fetch(`${API_URL}/api/menu`)
+      .then(response => response.json())
+      .then(data => {
+          const menuSection = document.getElementById('menu-items');
+          data.forEach(item => {
+              const price = parseFloat(item.price); // Convert string to number
+              const itemElement = document.createElement('div');
+              itemElement.innerHTML = `
+                  <h3>${item.name}</h3>
+                  <p>${item.description}</p>
+                  <p>$${price.toFixed(2)}</p>
+              `;
+              menuSection.appendChild(itemElement);
+          });
+      })
+      .catch(error => console.error('Error fetching menu items:', error));
 }
 
 // Handle reservation form submission
