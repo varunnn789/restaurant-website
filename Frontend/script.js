@@ -1,7 +1,7 @@
 const API_URL = 'https://restaurant-backend-ybln.onrender.com';
 let currentUser = null;
 
-// Auth Functions
+// Modal Functions
 function showModal(modalId) {
     document.getElementById(modalId).style.display = 'block';
 }
@@ -11,8 +11,8 @@ function hideModal(modalId) {
 }
 
 function updateAuthUI() {
-    const loginBtn = document.getElementById('login-btn');
-    const signupBtn = document.getElementById('signup-btn');
+    const loginBtn = document.getElementById('show-login-btn');
+    const signupBtn = document.getElementById('show-signup-btn');
     const userProfile = document.getElementById('user-profile');
     const userName = document.getElementById('user-name');
     const myReservations = document.getElementById('my-reservations');
@@ -37,6 +37,7 @@ function updateAuthUI() {
     }
 }
 
+// Auth Functions
 function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -44,7 +45,7 @@ function logout() {
     updateAuthUI();
 }
 
-// Fetch Functions
+// Menu Functions
 async function fetchMenuItems() {
     try {
         const response = await fetch(`${API_URL}/api/menu`);
@@ -77,6 +78,7 @@ async function fetchMenuItems() {
     }
 }
 
+// Reservation Functions
 async function fetchUserReservations() {
     if (!currentUser) return;
 
@@ -208,12 +210,35 @@ async function handleReservation(event) {
 
 // Initialize
 function init() {
+    // Fetch menu items
     fetchMenuItems();
     
-    // Set up event listeners
+    // Set up event listeners for modals
+    document.getElementById('show-login-btn').addEventListener('click', () => showModal('login-modal'));
+    document.getElementById('show-signup-btn').addEventListener('click', () => showModal('signup-modal'));
+    
+    // Set up form submissions
     document.getElementById('login-form').addEventListener('submit', handleLogin);
     document.getElementById('signup-form').addEventListener('submit', handleSignup);
     document.getElementById('reservation-form').addEventListener('submit', handleReservation);
+    
+    // Set up logout
+    document.getElementById('logout-btn').addEventListener('click', logout);
+    
+    // Set up modal close buttons
+    document.querySelectorAll('.close').forEach(button => {
+        button.addEventListener('click', () => {
+            const modal = button.closest('.modal');
+            if (modal) modal.style.display = 'none';
+        });
+    });
+
+    // Close modals when clicking outside
+    window.addEventListener('click', (event) => {
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = 'none';
+        }
+    });
 
     // Check for existing session
     const savedUser = localStorage.getItem('user');
@@ -222,13 +247,7 @@ function init() {
         updateAuthUI();
         fetchUserReservations();
     }
-
-    // Close modals when clicking outside
-    window.onclick = function(event) {
-        if (event.target.classList.contains('modal')) {
-            event.target.style.display = 'none';
-        }
-    };
 }
 
+// Start the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', init);
