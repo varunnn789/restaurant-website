@@ -2,8 +2,8 @@ services:
   - type: web
     name: restaurant-frontend
     env: static
-    buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
+    buildCommand: cd Frontend && npm install && npm run build
+    staticPublishPath: Frontend/dist
     routes:
       - type: rewrite
         source: /*

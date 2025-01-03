@@ -1,4 +1,4 @@
-const API_URL = 'https://restaurant-backend-ybln.onrender.com';
+const API_URL = 'https://restaurant-backend-ybln.onrender.com/api';
 
 // Fetch menu items
 function fetchMenuItems() {
