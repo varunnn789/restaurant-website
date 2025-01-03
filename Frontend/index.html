@@ -5,9 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mumbai Vadapav</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/jpeg" href="download.jpeg">
 </head>
 <body>
     <header>
+        <div class="logo-container">
+            <img src="download.jpeg" alt="Mumbai Vadapav Logo" class="logo">
+        </div>
         <nav>
             <ul>
                 <li><a href="#home">Home</a></li>
@@ -18,43 +22,57 @@
         </nav>
     </header>
 
-    <main>
-        <section id="home">
-            <h1>Welcome to Mumbai Vadapav</h1>
-            <p>Experience the authentic taste of Maharashtrian cuisine at its best.</p>
-        </section>
+    <div class="content-wrapper">
+        <main>
+            <section id="home" class="hero-section">
+                <h1>Welcome to Mumbai Vadapav</h1>
+                <p class="tagline">Experience the authentic taste of Maharashtrian cuisine at its best.</p>
+            </section>
 
-        <section id="menu">
-            <h2>Our Menu</h2>
-            <div id="menu-items">
-                <!-- Menu items will be dynamically loaded here -->
-            </div>
-        </section>
+            <section id="menu" class="section-container">
+                <h2>Our Menu</h2>
+                <div id="menu-items">
+                    <!-- Menu items will be dynamically loaded here -->
+                </div>
+            </section>
 
-        <section id="reservations">
-            <h2>Make a Reservation</h2>
-            <form id="reservation-form">
-                <input type="text" name="customer_name" placeholder="Your Name" required>
-                <input type="email" name="email" placeholder="Your Email" required>
-                <input type="date" name="date" required>
-                <input type="time" name="time" required>
-                <input type="number" name="party_size" placeholder="Party Size" required>
-                <button type="submit">Reserve</button>
-            </form>
-        </section>
+            <section id="reservations" class="section-container">
+                <h2>Make a Reservation</h2>
+                <form id="reservation-form">
+                    <input type="text" name="customer_name" placeholder="Your Name" required>
+                    <input type="email" name="email" placeholder="Your Email" required>
+                    <input type="date" name="date" required>
+                    <input type="time" name="time" required>
+                    <input type="number" name="party_size" placeholder="Party Size" required>
+                    <button type="submit">Reserve Your Table</button>
+                </form>
+            </section>
 
-        <section id="contact">
-            <h2>Contact Us</h2>
-            <p>Phone: (999) 999 9999</p>
-            <p>Email: testemailaddresss@mumbaivadapav.com</p>
-            <p>Address: 123 Main St, Buffalo, NY, 14218</p>
-        </section>
-    </main>
+            <section id="contact" class="section-container">
+                <h2>Contact Us</h2>
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <i class="fas fa-phone"></i>
+                        <p>Phone: (999) 999 9999</p>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <p>Email: testemailaddresss@mumbaivadapav.com</p>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <p>Address: 123 Main St, Buffalo, NY, 14218</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
 
     <footer>
         <p>&copy; 2025 Mumbai Vadapav. All rights reserved.</p>
     </footer>
 
+    <script src="https://kit.fontawesome.com/your-kit-code.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
