@@ -17,14 +17,20 @@ const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
+    console.log('Auth header:', authHeader);
+    console.log('Token:', token);
+
     if (!token) {
         return res.status(401).json({ error: 'Authentication required' });
     }
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) {
+            console.error('Token verification error:', err);
             return res.status(403).json({ error: 'Invalid token' });
         }
+        
+        console.log('Authenticated user:', user);
         req.user = user;
         next();
     });
@@ -87,19 +93,73 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+// Add this route to check database tables
+app.get('/api/debug/tables', async (req, res) => {
+    try {
+        // Check users table
+        const usersTable = await db.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'users'
+            );
+        `);
+        
+        // Check reservations table
+        const reservationsTable = await db.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'reservations'
+            );
+        `);
+        
+        // Get table structures
+        const userColumns = await db.query(`
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_name = 'users';
+        `);
+        
+        const reservationColumns = await db.query(`
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_name = 'reservations';
+        `);
+        
+        res.json({
+            tables: {
+                users: usersTable.rows[0].exists,
+                reservations: reservationsTable.rows[0].exists
+            },
+            structure: {
+                users: userColumns.rows,
+                reservations: reservationColumns.rows
+            }
+        });
+    } catch (err) {
+        console.error('Debug error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 // Protected Routes
 app.get('/api/my-reservations', authenticateToken, async (req, res) => {
     try {
+        console.log('Fetching reservations for user:', req.user.userId);
+        
         const result = await db.query(
             'SELECT * FROM reservations WHERE user_id = $1 ORDER BY date, time',
             [req.user.userId]
         );
+        
+        console.log('Found reservations:', result.rows);
         res.json(result.rows);
     } catch (err) {
         console.error('Error fetching reservations:', err);
         res.status(500).json({ 
             error: 'Error fetching reservations',
-            details: err.message 
+            message: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
         });
     }
 });
@@ -119,19 +179,35 @@ app.get('/api/menu', async (req, res) => {
 app.post('/api/reservations', authenticateToken, async (req, res) => {
     try {
         const { customer_name, email, date, time, party_size } = req.body;
-        // Add user_id from the authenticated token
         const user_id = req.user.userId;
-        
-        const query = 'INSERT INTO reservations (customer_name, email, date, time, party_size, user_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *';
+
+        console.log('Creating reservation:', {
+            customer_name,
+            email,
+            date,
+            time,
+            party_size,
+            user_id
+        });
+
+        const query = `
+            INSERT INTO reservations 
+            (customer_name, email, date, time, party_size, user_id) 
+            VALUES ($1, $2, $3, $4, $5, $6) 
+            RETURNING *
+        `;
         const values = [customer_name, email, date, time, party_size, user_id];
         
         const result = await db.query(query, values);
+        console.log('Reservation created:', result.rows[0]);
+        
         res.status(201).json(result.rows[0]);
     } catch (err) {
-        console.error('Reservation error:', err);
+        console.error('Reservation creation error:', err);
         res.status(500).json({ 
-            error: 'Internal server error',
-            details: err.message 
+            error: 'Internal server error', 
+            message: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
         });
     }
 });
@@ -139,6 +215,8 @@ app.post('/api/reservations', authenticateToken, async (req, res) => {
 // Initialize tables
 async function initializeTables() {
     try {
+        // Create users table first
+        console.log('Creating users table...');
         await db.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -147,31 +225,77 @@ async function initializeTables() {
                 password_hash VARCHAR(255) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+        `);
+        console.log('Users table created/verified successfully');
 
+        // Create menu_items table
+        console.log('Creating menu_items table...');
+        await db.query(`
             CREATE TABLE IF NOT EXISTS menu_items (
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(100) NOT NULL,
                 description TEXT,
                 price DECIMAL(10, 2) NOT NULL,
-                category VARCHAR(50)
+                category VARCHAR(50),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
-
-            CREATE TABLE IF NOT EXISTS reservations (
-            id SERIAL PRIMARY KEY,
-            customer_name VARCHAR(100) NOT NULL,
-            email VARCHAR(100) NOT NULL,
-            date DATE NOT NULL,
-            time TIME NOT NULL,
-            party_size INT NOT NULL,
-            user_id INTEGER REFERENCES users(id),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
         `);
-        console.log('Tables initialized successfully');
+        console.log('Menu items table created/verified successfully');
+
+        // Create reservations table with foreign key reference
+        console.log('Creating reservations table...');
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS reservations (
+                id SERIAL PRIMARY KEY,
+                customer_name VARCHAR(100) NOT NULL,
+                email VARCHAR(100) NOT NULL,
+                date DATE NOT NULL,
+                time TIME NOT NULL,
+                party_size INT NOT NULL,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+        console.log('Reservations table created/verified successfully');
+
+        // Verify all tables exist
+        const tables = await db.query(`
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name IN ('users', 'menu_items', 'reservations');
+        `);
+
+        console.log('Existing tables:', tables.rows.map(row => row.table_name));
+
+        // Additional verification of table structures
+        const userColumns = await db.query(`
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_name = 'users';
+        `);
+        console.log('Users table structure:', userColumns.rows);
+
+        const reservationColumns = await db.query(`
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_name = 'reservations';
+        `);
+        console.log('Reservations table structure:', reservationColumns.rows);
+
+        console.log('All tables initialized successfully');
     } catch (err) {
         console.error('Error initializing tables:', err);
+        // Log detailed error information
+        console.error('Error details:', {
+            message: err.message,
+            code: err.code,
+            stack: err.stack
+        });
+        throw err; // Rethrow to handle in server startup
     }
 }
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
