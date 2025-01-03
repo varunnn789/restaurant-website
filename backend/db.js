@@ -2,19 +2,12 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const pool = new Pool({
-    connectionString: 'postgresql://restaurant_db_aozf_user:do72GnfFKRnyPkUp2N4VlGHfrPKkCwQq@dpg-ctrgba1u0jms73fv2320-a.oregon-postgres.render.com/restaurant_db_aozf',
+    host: 'ep-steep-recipe-a49ck4ln.us-east-1.pg.koyeb.app',
+    database: 'koyebdb',
+    user: 'koyeb-adm',
+    password: 'Wmn9zHMTFRk8',
     ssl: {
         rejectUnauthorized: false
-    }
-});
-
-// Add this to test the connection on startup
-pool.connect((err, client, release) => {
-    if (err) {
-        console.error('Error connecting to the database:', err.stack);
-    } else {
-        console.log('Connected to database successfully');
-        release();
     }
 });
 
