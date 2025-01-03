@@ -9,16 +9,45 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Routes
+// Health check route
+app.get('/', (req, res) => {
+    res.send('Server is running!');
+});
+
+// Debug route to check database connection
+app.get('/test-db', async (req, res) => {
+    try {
+        const result = await db.query('SELECT NOW()');
+        res.json({ 
+            message: 'Database connected successfully',
+            timestamp: result.rows[0].now
+        });
+    } catch (err) {
+        console.error('Database connection error:', err);
+        res.status(500).json({ 
+            error: 'Database connection failed',
+            details: err.message
+        });
+    }
+});
+
+// Existing routes
 app.get('/api/menu', async (req, res) => {
     try {
         const result = await db.query('SELECT * FROM menu_items');
+        console.log('Menu items retrieved:', result.rows); // Add this line for debugging
         res.json(result.rows);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error fetching menu items:', err);
+        res.status(500).json({ 
+            error: 'Internal server error',
+            details: err.message
+        });
     }
 });
+
+// ... rest of your code
+
 
 app.post('/api/reservations', async (req, res) => {
     const { customer_name, email, date, time, party_size } = req.body;

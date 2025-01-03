@@ -8,6 +8,16 @@ const pool = new Pool({
     }
 });
 
+// Add this to test the connection on startup
+pool.connect((err, client, release) => {
+    if (err) {
+        console.error('Error connecting to the database:', err.stack);
+    } else {
+        console.log('Connected to database successfully');
+        release();
+    }
+});
+
 module.exports = {
     query: (text, params) => pool.query(text, params),
 };
