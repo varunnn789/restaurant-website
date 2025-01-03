@@ -1,50 +1,103 @@
 const express = require('express');
 const cors = require('cors');
 const db = require('./db');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const app = express();
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Health check route
-app.get('/', (req, res) => {
-    res.send('Server is running!');
-});
+// Authentication Middleware
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
 
-// Debug route to check database connection
-app.get('/test-db', async (req, res) => {
+    if (!token) {
+        return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ error: 'Invalid token' });
+        }
+        req.user = user;
+        next();
+    });
+};
+
+// Auth Routes
+app.post('/api/signup', async (req, res) => {
     try {
-        const result = await db.query('SELECT NOW()');
-        res.json({ 
-            message: 'Database connected successfully',
-            timestamp: result.rows[0].now
-        });
+        const { name, email, password } = req.body;
+        
+        // Check if user already exists
+        const userExists = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+        if (userExists.rows.length > 0) {
+            return res.status(400).json({ error: 'Email already registered' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        const result = await db.query(
+            'INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email',
+            [name, email, hashedPassword]
+        );
+        
+        const token = jwt.sign({ userId: result.rows[0].id }, JWT_SECRET);
+        res.status(201).json({ token, user: result.rows[0] });
     } catch (err) {
-        console.error('Database connection error:', err);
-        res.status(500).json({ 
-            error: 'Database connection failed',
-            details: err.message
-        });
+        console.error(err);
+        res.status(500).json({ error: 'Error creating user' });
     }
 });
 
-app.get('/api/check-table', async (req, res) => {
+app.post('/api/login', async (req, res) => {
     try {
-        const result = await db.query(`
-            SELECT column_name, data_type 
-            FROM information_schema.columns 
-            WHERE table_name = 'menu_items';
-        `);
+        const { email, password } = req.body;
+        const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+        
+        if (result.rows.length === 0) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        const user = result.rows[0];
+        const validPassword = await bcrypt.compare(password, user.password_hash);
+        
+        if (!validPassword) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        const token = jwt.sign({ userId: user.id }, JWT_SECRET);
+        res.json({ 
+            token, 
+            user: { 
+                id: user.id, 
+                name: user.name, 
+                email: user.email 
+            } 
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Error logging in' });
+    }
+});
+
+// Protected Routes
+app.get('/api/my-reservations', authenticateToken, async (req, res) => {
+    try {
+        const result = await db.query(
+            'SELECT * FROM reservations WHERE user_id = $1 ORDER BY date, time',
+            [req.user.userId]
+        );
         res.json(result.rows);
     } catch (err) {
-        console.error('Table check error:', err);
-        res.status(500).json({ 
-            error: 'Error checking table structure',
-            details: err.message 
-        });
+        console.error(err);
+        res.status(500).json({ error: 'Error fetching reservations' });
     }
 });
 
@@ -52,52 +105,19 @@ app.get('/api/check-table', async (req, res) => {
 app.get('/api/menu', async (req, res) => {
     try {
         const result = await db.query('SELECT * FROM menu_items');
-        console.log('Menu items retrieved:', result.rows); // Add this line for debugging
         res.json(result.rows);
     } catch (err) {
-        console.error('Error fetching menu items:', err);
-        res.status(500).json({ 
-            error: 'Internal server error',
-            details: err.message
-        });
+        console.error(err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-app.post('/api/menu', async (req, res) => {
-    const { name, description, price, category } = req.body;
-    
-    // Validation
-    if (!name || !description || !price || !category) {
-        return res.status(400).json({ 
-            error: 'Missing required fields',
-            required: ['name', 'description', 'price', 'category']
-        });
-    }
-
-    try {
-        const query = 'INSERT INTO menu_items (name, description, price, category) VALUES ($1, $2, $3, $4) RETURNING *';
-        const values = [name, description, price, category];
-        
-        console.log('Attempting to insert:', values); // Debug log
-        
-        const result = await db.query(query, values);
-        console.log('Insert result:', result.rows[0]); // Debug log
-        
-        res.status(201).json(result.rows[0]);
-    } catch (err) {
-        console.error('Detailed error:', err); // This will show in your server logs
-        res.status(500).json({ 
-            error: 'Internal server error',
-            details: err.message
-        });
-    }
-});
-
-app.post('/api/reservations', async (req, res) => {
+// Update reservation route to include user_id
+app.post('/api/reservations', authenticateToken, async (req, res) => {
     const { customer_name, email, date, time, party_size } = req.body;
     try {
-        const query = 'INSERT INTO reservations (customer_name, email, date, time, party_size) VALUES ($1, $2, $3, $4, $5) RETURNING *';
-        const values = [customer_name, email, date, time, party_size];
+        const query = 'INSERT INTO reservations (customer_name, email, date, time, party_size, user_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *';
+        const values = [customer_name, email, date, time, party_size, req.user.userId];
         const result = await db.query(query, values);
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -106,10 +126,18 @@ app.post('/api/reservations', async (req, res) => {
     }
 });
 
-// Initialize tables if they don't exist
+// Initialize tables
 async function initializeTables() {
     try {
         await db.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                email VARCHAR(100) UNIQUE NOT NULL,
+                password_hash VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
             CREATE TABLE IF NOT EXISTS menu_items (
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(100) NOT NULL,
@@ -124,7 +152,9 @@ async function initializeTables() {
                 email VARCHAR(100) NOT NULL,
                 date DATE NOT NULL,
                 time TIME NOT NULL,
-                party_size INT NOT NULL
+                party_size INT NOT NULL,
+                user_id INTEGER REFERENCES users(id),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
         console.log('Tables initialized successfully');

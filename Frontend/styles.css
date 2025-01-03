@@ -64,6 +64,75 @@ nav a:hover {
     color: #e65100;
 }
 
+/* Auth Buttons Styles */
+.auth-buttons {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.auth-btn {
+    background: #e65100;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.3s ease;
+}
+
+.auth-btn:hover {
+    background: #f57c00;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-profile span {
+    color: #333;
+    font-weight: 500;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+}
+
+.modal-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    max-width: 400px;
+    width: 90%;
+    margin: 15% auto;
+    position: relative;
+}
+
+.close {
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+}
+
+.close:hover {
+    color: #333;
+}
+
+/* Existing styles */
 main {
     position: relative;
     z-index: 1;
@@ -75,6 +144,40 @@ section {
     margin: 0 auto 4rem;
     padding: 2rem;
 }
+
+/* My Reservations Section */
+#my-reservations {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+}
+
+.reservation-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.reservation-card p {
+    margin-bottom: 0.5rem;
+}
+
+/* Auth Message */
+.auth-message {
+    text-align: center;
+    padding: 1rem;
+    background: #fff3e0;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    color: #e65100;
+}
+
+.hidden {
+    display: none !important;
+}
+
 
 .hero {
     height: calc(100vh - 80px);

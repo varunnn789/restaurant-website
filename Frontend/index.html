@@ -24,6 +24,14 @@
                     <li><a href="#contact">Contact</a></li>
                 </ul>
             </nav>
+            <div class="auth-buttons">
+                <button onclick="showModal('login-modal')" class="auth-btn" id="login-btn">Login</button>
+                <button onclick="showModal('signup-modal')" class="auth-btn" id="signup-btn">Sign Up</button>
+                <div class="user-profile hidden" id="user-profile">
+                    <span id="user-name"></span>
+                    <button onclick="logout()" class="auth-btn">Logout</button>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -44,6 +52,9 @@
 
         <section id="reservations">
             <h2>Make a Reservation</h2>
+            <div class="auth-message hidden">
+                Please login to make a reservation
+            </div>
             <form id="reservation-form">
                 <input type="text" name="customer_name" placeholder="Your Name" required>
                 <input type="email" name="email" placeholder="Your Email" required>
@@ -52,6 +63,13 @@
                 <input type="number" name="party_size" placeholder="Party Size" required>
                 <button type="submit">Reserve Your Table</button>
             </form>
+        </section>
+
+        <section id="my-reservations" class="hidden">
+            <h2>My Reservations</h2>
+            <div id="user-reservations">
+                <!-- User reservations will be loaded here -->
+            </div>
         </section>
 
         <section id="contact">
@@ -66,8 +84,35 @@
         </section>
     </main>
 
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="hideModal('login-modal')">&times;</span>
+            <h2>Login</h2>
+            <form id="login-form">
+                <input type="email" name="email" placeholder="Email" required>
+                <input type="password" name="password" placeholder="Password" required>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div id="signup-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="hideModal('signup-modal')">&times;</span>
+            <h2>Sign Up</h2>
+            <form id="signup-form">
+                <input type="text" name="name" placeholder="Full Name" required>
+                <input type="email" name="email" placeholder="Email" required>
+                <input type="password" name="password" placeholder="Password" required>
+                <button type="submit">Sign Up</button>
+            </form>
+        </div>
+    </div>
+
     <footer>
-        <p>&copy; 2025 Mumbai Vadapav. All rights reserved.</p>
+        <p>&copy; 2025 Varun Singh. All rights reserved.</p>
     </footer>
 
     <script src="script.js"></script>
