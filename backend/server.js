@@ -29,7 +29,6 @@ const authenticateToken = (req, res, next) => {
             console.error('Token verification error:', err);
             return res.status(403).json({ error: 'Invalid token' });
         }
-        
         console.log('Authenticated user:', user);
         req.user = user;
         next();
@@ -93,10 +92,9 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// Add this route to check database tables
+// Debug Route
 app.get('/api/debug/tables', async (req, res) => {
     try {
-        // Check users table
         const usersTable = await db.query(`
             SELECT EXISTS (
                 SELECT FROM information_schema.tables 
@@ -104,7 +102,6 @@ app.get('/api/debug/tables', async (req, res) => {
             );
         `);
         
-        // Check reservations table
         const reservationsTable = await db.query(`
             SELECT EXISTS (
                 SELECT FROM information_schema.tables 
@@ -112,7 +109,6 @@ app.get('/api/debug/tables', async (req, res) => {
             );
         `);
         
-        // Get table structures
         const userColumns = await db.query(`
             SELECT column_name, data_type 
             FROM information_schema.columns 
@@ -141,17 +137,14 @@ app.get('/api/debug/tables', async (req, res) => {
     }
 });
 
-
 // Protected Routes
 app.get('/api/my-reservations', authenticateToken, async (req, res) => {
     try {
         console.log('Fetching reservations for user:', req.user.userId);
-        
         const result = await db.query(
             'SELECT * FROM reservations WHERE user_id = $1 ORDER BY date, time',
             [req.user.userId]
         );
-        
         console.log('Found reservations:', result.rows);
         res.json(result.rows);
     } catch (err) {
@@ -164,7 +157,7 @@ app.get('/api/my-reservations', authenticateToken, async (req, res) => {
     }
 });
 
-// Existing routes
+// Menu Route
 app.get('/api/menu', async (req, res) => {
     try {
         const result = await db.query('SELECT * FROM menu_items');
@@ -175,7 +168,7 @@ app.get('/api/menu', async (req, res) => {
     }
 });
 
-// Update reservation route to include user_id
+// Reservations Route
 app.post('/api/reservations', authenticateToken, async (req, res) => {
     try {
         const { customer_name, email, date, time, party_size } = req.body;
@@ -265,7 +258,6 @@ async function initializeTables() {
             WHERE table_schema = 'public' 
             AND table_name IN ('users', 'menu_items', 'reservations');
         `);
-
         console.log('Existing tables:', tables.rows.map(row => row.table_name));
 
         // Additional verification of table structures
@@ -286,19 +278,22 @@ async function initializeTables() {
         console.log('All tables initialized successfully');
     } catch (err) {
         console.error('Error initializing tables:', err);
-        // Log detailed error information
         console.error('Error details:', {
             message: err.message,
             code: err.code,
             stack: err.stack
         });
-        throw err; // Rethrow to handle in server startup
+        throw err;
     }
 }
 
-
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`Server running on port ${PORT}`);
-    initializeTables();
+    try {
+        await initializeTables();
+        console.log('Database initialization complete');
+    } catch (err) {
+        console.error('Failed to initialize database:', err);
+    }
 });
