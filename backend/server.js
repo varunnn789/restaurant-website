@@ -46,8 +46,18 @@ app.get('/api/menu', async (req, res) => {
     }
 });
 
-// ... rest of your code
-
+app.post('/api/menu', async (req, res) => {
+    const { name, description, price, category } = req.body;
+    try {
+        const query = 'INSERT INTO menu_items (name, description, price, category) VALUES ($1, $2, $3, $4) RETURNING *';
+        const values = [name, description, price, category];
+        const result = await db.query(query, values);
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
 app.post('/api/reservations', async (req, res) => {
     const { customer_name, email, date, time, party_size } = req.body;
